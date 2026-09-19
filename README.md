@@ -106,8 +106,8 @@ flowchart TD
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/llm-reliability-lab.git
-   cd llm-reliability-lab
+   git clone https://github.com/TechPrateek/LLM-Reliability-Lab.git
+   cd LLM-Reliability-Lab
    ```
 
 2. Install dependencies:
