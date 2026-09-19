@@ -8,11 +8,10 @@ import {
   RotateCcw, 
   Split, 
   Sparkles, 
-  CheckCircle, 
-  AlertOctagon, 
-  Info,
-  Layers,
-  ArrowRight
+  CornerDownLeft,
+  Terminal,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -35,12 +34,27 @@ export const ModelBattleArena: React.FC = () => {
     setPromptInput(currentTestCase.prompt);
   }, [currentTestCase]);
 
+  // Support Ctrl+Enter / Cmd+Enter keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        if (!isEvaluating && promptInput.trim()) {
+          e.preventDefault();
+          handleRunBenchmark();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isEvaluating, promptInput]);
+
   const handleRunBenchmark = async () => {
+    if (isEvaluating || !promptInput.trim()) return;
     await runActiveBenchmark(promptInput);
 
-    // Trigger celebratory confetti if models passed
+    // Trigger celebratory confetti on pass
     confetti({
-      particleCount: 40,
+      particleCount: 35,
       spread: 60,
       origin: { y: 0.8 },
       colors: ['#3b82f6', '#10b981', '#8b5cf6']
@@ -54,34 +68,42 @@ export const ModelBattleArena: React.FC = () => {
   const selectedModels = models.filter(m => selectedModelIds.includes(m.id));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       
-      {/* 1. Model Selector Header */}
+      {/* 1. Compact Model Selector Chips */}
       <ModelSelectorBar />
 
-      {/* 2. Stress Test Vector Selector */}
+      {/* 2. Compact Benchmark Trap Vectors Bar */}
       <TestCaseSelector />
 
-      {/* 3. Interactive Arena Prompt Console */}
-      <div className="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-4 backdrop-blur-sm shadow-xl space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-blue-400" />
-            <h3 className="text-sm font-semibold text-white">
-              Arena Prompt Console
-            </h3>
-            <span className="text-xs text-slate-500 font-mono">
-              (Live-editable test input)
-            </span>
+      {/* 3. Sleek Arena Prompt Bar & Command Console */}
+      <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-3.5 backdrop-blur-md shadow-xl space-y-2.5">
+        
+        {/* Input Textarea with Integrated Actions */}
+        <div className="relative">
+          <textarea
+            value={promptInput}
+            onChange={(e) => setPromptInput(e.target.value)}
+            disabled={isEvaluating}
+            rows={2}
+            className="w-full bg-slate-950/90 border border-slate-800 rounded-xl p-3 pr-24 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 font-sans transition resize-none leading-relaxed"
+            placeholder="Type or edit an adversarial prompt, false premise trap, or reasoning query..."
+          />
+          
+          <div className="absolute right-3 bottom-3 flex items-center gap-1 text-[10px] font-mono text-slate-500 select-none">
+            <span>{promptInput.length} chars</span>
           </div>
+        </div>
 
+        {/* Command Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowDiffView(!showDiffView)}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono transition border ${
                 showDiffView 
                   ? 'bg-purple-600/20 text-purple-300 border-purple-500/50' 
-                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                  : 'bg-slate-800/80 text-slate-400 border-slate-700 hover:text-white'
               }`}
               title="Compare side-by-side textual diffs"
             >
@@ -92,43 +114,22 @@ export const ModelBattleArena: React.FC = () => {
             <button
               onClick={handleResetPrompt}
               disabled={isEvaluating}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 transition"
-              title="Reset to test case default"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 transition"
+              title="Reset prompt to test case default"
             >
               <RotateCcw className="w-3 h-3" />
               <span>Reset</span>
             </button>
-          </div>
-        </div>
 
-        {/* Textarea Input */}
-        <div className="relative">
-          <textarea
-            value={promptInput}
-            onChange={(e) => setPromptInput(e.target.value)}
-            disabled={isEvaluating}
-            rows={3}
-            className="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 font-sans transition"
-            placeholder="Enter an adversarial prompt, false premise trap, or reasoning query..."
-          />
-          <div className="absolute bottom-2.5 right-3 text-[10px] font-mono text-slate-500">
-            {promptInput.length} chars
-          </div>
-        </div>
-
-        {/* Execute Action Button */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <Info className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-            <span>
-              Runs simultaneous parallel evaluations across all <strong className="text-white">{selectedModelIds.length} active models</strong>.
+            <span className="text-[11px] text-slate-500 font-mono hidden md:inline">
+              Testing {selectedModels.length} models simultaneously
             </span>
           </div>
 
           <button
             onClick={handleRunBenchmark}
             disabled={isEvaluating || !promptInput.trim()}
-            className={`px-6 py-2.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-lg ${
+            className={`px-5 py-2 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-lg ${
               isEvaluating || !promptInput.trim()
                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-blue-500/25 ring-1 ring-white/20 hover:scale-[1.01]'
@@ -141,8 +142,11 @@ export const ModelBattleArena: React.FC = () => {
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 fill-current" />
+                <Play className="w-3.5 h-3.5 fill-current text-white" />
                 <span>Run Arena Benchmark</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/20 text-white hidden sm:inline">
+                  Ctrl+↵
+                </span>
               </>
             )}
           </button>
@@ -151,7 +155,7 @@ export const ModelBattleArena: React.FC = () => {
 
       {/* 4. Diff View Inspection Panel (if toggled) */}
       {showDiffView && selectedModels.length >= 2 && (
-        <div className="p-4 rounded-2xl bg-slate-900/90 border border-purple-500/30 shadow-xl space-y-2">
+        <div className="p-3.5 rounded-2xl bg-slate-900/95 border border-purple-500/40 shadow-xl space-y-2 animate-in fade-in duration-200">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-semibold text-purple-300 flex items-center gap-1.5">
               <Split className="w-3.5 h-3.5" />
@@ -166,7 +170,7 @@ export const ModelBattleArena: React.FC = () => {
                 {activeResults[selectedModels[0].id]?.findings?.[0] || 'Awaiting evaluation result...'}
               </p>
               <div className="mt-2 text-[10px] font-mono text-slate-500">
-                Score: {activeResults[selectedModels[0].id]?.score ?? '--'}/100 • Latency: {activeResults[selectedModels[0].id]?.latencyMs ?? '--'}ms
+                Score: {activeResults[selectedModels[0].id]?.score ?? '--'}% • Latency: {activeResults[selectedModels[0].id]?.latencyMs ?? '--'}ms
               </div>
             </div>
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
@@ -175,14 +179,14 @@ export const ModelBattleArena: React.FC = () => {
                 {activeResults[selectedModels[1].id]?.findings?.[0] || 'Awaiting evaluation result...'}
               </p>
               <div className="mt-2 text-[10px] font-mono text-slate-500">
-                Score: {activeResults[selectedModels[1].id]?.score ?? '--'}/100 • Latency: {activeResults[selectedModels[1].id]?.latencyMs ?? '--'}ms
+                Score: {activeResults[selectedModels[1].id]?.score ?? '--'}% • Latency: {activeResults[selectedModels[1].id]?.latencyMs ?? '--'}ms
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 5. Parallel Competing Models Arena Grid */}
+      {/* 5. Parallel Competing Models Arena Grid (Immediately Visible!) */}
       <div 
         className={`grid gap-4 ${
           selectedModels.length === 1 
