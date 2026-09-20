@@ -61,7 +61,7 @@ function AppContent() {
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-blue-400" />
             <span className="font-semibold text-slate-400">LLM Reliability Lab</span>
-            <span>• Built for Hack Devengers 2.0 (Powered by Unstop & Lovable)</span>
+            <span>• Open Innovation Project • Hack Devengers 2.0</span>
           </div>
 
           <div className="flex items-center gap-4 text-slate-400">
